@@ -19,4 +19,4 @@ Under folder Q4, heatmap.html is to describe the earthquake counts for different
 
 Under folder Q5, interactive.html is a combination of an interactive line chart and sub-charts to show the earthquake counts by U.S. state and region, in the years 2010 to 2015.
 
-Under folder Q6, choropleth.html is a choropleth map kto show the earthquake counts by U.S. state and region, in the years 2010 to 2015.
+Under folder Q6, choropleth.html is a choropleth map to show the earthquake counts by U.S. state and region, in the years 2010 to 2015.

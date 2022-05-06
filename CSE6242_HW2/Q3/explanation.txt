@@ -1,0 +1,5 @@
+HW2, Q3
+
+For log scale, when the dataset is to respond to skewness towards large values and when it is to show percent change or multiplicative facotrs.
+
+For square root scale, when the dataset is to process values with exponential transform.

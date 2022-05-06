@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<style>
+
+.states {
+  fill: none;
+  stroke: black;
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+
+}
+body {
+  margin-top: 30px;
+  font-size: 1.4rem;
+  font-family: 'Source Sans Pro', sans-serif;
+  font-weight: 700;
+  fill: black;
+
+}
+
+.d3-tip {
+  line-height: 1;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  border-radius: 2px;
+}
+
+</style>
+<body>
+  <div id="my_dataviz"></div>
+<svg width="1300" height="800"></svg>
+<script type="text/javascript" src="../lib/d3.v5.min.js"></script>
+        <script type="text/javascript" src="../lib/d3-scale-chromatic.v1.min.js"></script>
+        <script type="text/javascript" src="../lib/d3-fetch.min.js"></script>
+        <script type="text/javascript" src="../lib/topojson.v2.min.js"></script>
+        <script type="text/javascript" src="../lib/d3-tip.min.js"></script>
+<script>
+
+// reference: https://bl.ocks.org/denisemauldin/3436a3ae06f73a492228059a515821fe
+// http://bl.ocks.org/michellechandra/0b2ce4923dc9b5809922
+
+var svg = d3.select("svg"),
+    width = +svg.attr("width"),
+    height = +svg.attr("height");
+
+var earthquake = d3.map();
+var regions = d3.map();
+var projection = d3.geoAlbersUsa()
+          .translate([width/2, height/2])
+          .scale([1100]);
+
+var path = d3.geoPath()
+            .projection(projection);
+
+
+
+var promises = [d3.json("states-10m.json"),
+                d3.csv("state-earthquakes.csv", function(d) { earthquake.set(d.States, +d["Total Earthquakes"]);
+                 regions.set(d.States, d.Region);})
+];
+
+Promise.all(promises).then(ready);
+console.log(promises);
+
+function ready([data]) {
+  var states = topojson.feature(data, data.objects.states).features;
+  console.log("states: ", states);
+  //var counts = topojson.feature(data, data.columns).features;
+  //console.log("counts: ", counts);
+  var mapColor = ["#fff5f0", "#fee0d2", "#fcbba1", "#fc9272", "#fb6a4a", "#ef3b2c", "#cb181d", "#a50f15", "#67000d"];
+
+  var colorScale = d3.scaleLog()
+                   .domain([1, 9021])
+                   .range([0, 8]);
+    console.log("colorScale: ", d3.values(colorScale));
+
+
+  svg.append("g")
+      .attr("class", "states")
+    .selectAll("path")
+    .data(topojson.feature(data, data.objects.states).features)
+    .enter().append("path")
+      .attr("fill", function(d) {
+
+        d.count = earthquake.get((d.properties).name);
+        d.region = regions.get((d.properties).name);
+        //var earthquake_count_1 = d3.map(d, function(d){return d.count;}).keys();
+        //console.log(earthquake_count_1[4]);
+        //var earthquake_count_2 = d3.map(d, function(d){return d.count;}).values();
+        //console.log(earthquake_count_2[4]);
+        return mapColor[Math.round(colorScale(d.count+1))];
+
+      })
+      .attr("d", path)
+      .on("mouseover", tip.show)
+      .on("mouseout", tip.hide);
+
+// set up frequency scale vs color range.
+      var tick = [0,0.5,1.5,2.5,3.5,4.5,5.5,6.5,7.5,8];
+      var slice = [];
+      tick.forEach(function(d) {
+          var x = Math.exp((d*Math.log(9021) - d*Math.log(1) + 8*Math.log(1))/8);
+          slice.push(Math.round(x) -1);
+        });
+
+
+      svg.selectAll(".legend")
+          .data(mapColor)
+          .enter()
+          .append("rect")
+          .attr("class", "legend")
+          .attr("x", 1100)
+            .attr("y", function(d,i) { return 270 + i * 27;})
+            .attr("width", 38)
+            .attr("height", 27)
+            .style("fill", function(d) { return d;});
+
+      svg.selectAll(".legendtext")
+          .data(slice)
+          .enter()
+          .append("text")
+          .attr("class", "legendtext")
+          .attr("x", 1145)
+          .attr("y", function(d,i) { return 275 + i * 27;})
+          .style("font-size", "14px")
+          .text(function(d) {return d;});
+
+      svg.append("text")
+            .attr("x", 1060)
+            .attr("y", 240)
+            .attr("class", "title")
+            .attr("text-anchor", "left")
+            .style("font-size", "16px")
+            .text("Earthquake Frequency");
+
+
+};
+
+  var tip = d3.tip()
+  .attr('class', 'd3-tip')
+  .html(function(d) {
+    var content = `<table>
+                            <tr><td>State: </td><td style="text-align: right">` + (d.properties).name + `</td></tr>
+                            <tr><td>Region: </td><td style="text-align: right">` + d.region + `</td></tr>
+                            <tr><td>Earthquakes: </td><td style="text-align: right">` + d.count + `</td></tr>
+                    </table>  `;
+
+    return content;
+
+  });
+
+  svg.call(tip);
+
+
+</script>
+
+    </body>
+</html>

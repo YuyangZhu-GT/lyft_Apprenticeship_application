@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+
+
+    <style>
+
+    body {
+      font: 10px sans-serif;
+    }
+
+    path {
+      stroke: steelblue;
+    	stroke-width: 2;
+    	fill: none;
+    }
+
+    .axis path,
+    .axis line {
+    	fill: none;
+    	stroke: grey;
+    	stroke-width: 1;
+    	shape-rendering: crispEdges;
+    }
+
+    </style>
+
+	</head>
+
+<body>
+  <script src="../lib/d3.v5.min.js"></script>
+  <script>
+
+// only curve
+
+// Read in data
+d3.csv("earthquakes.csv").then(function(data) {
+  // Set the color domain equal to the three product categories
+  var productCategories = d3.keys(data[0]).filter(function(key) {
+    //return key !== "Order Month" && key !== "metric";
+    return key !== "year" && key !== "Estimated Deaths";
+  });
+  //color.domain(productCategories);
+  // console.log(JSON.stringify(data, null, 2)) // to view the structure
+  // Format the data field
+  //data.forEach(function(d) {
+    //d["year"] = +d["year"];
+//});
+data.forEach(function(d) {
+  var parseDate = d3.timeParse("%Y");
+  d["year"] = parseDate(d["year"]);
+});
+var concentrations = productCategories.map(function(category) {
+  return {
+    category: category,
+    datapoints: data.map(function(d) {
+      return { date: d["year"], times: +d[category], death: +d["Estimated Deaths"] };
+    })
+  };
+});
+
+var margin = { top: 60, right: 30, bottom: 60, left: 80 },
+  width =
+    800 - margin.left - margin.right,
+  height =
+    400 - margin.top - margin.bottom;
+// Define date parser
+//var parseDate = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+// Define scales
+var xScale = d3.scaleTime().range([0, width-100]); // chart width
+var yScale = d3.scaleLinear().range([height, 0]);
+//var zScale =  d3.scaleLinear().domain([200, 300000]).range([ 5, 12]);
+//var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+//var legend_name = ["5_5.9", "6_6.9", "7_7.9", "8.0+"]
+
+// Option 1: provide color names:
+//var myColor = d3.scaleOrdinal().domain(legend_name)
+  //.range(["#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+var color = d3.scaleOrdinal()
+    .domain(["5_5.9", "6_6.9", "7_7.9", "8.0+" ])
+    .range([ "#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+// source https://stackoverflow.com/questions/24539234/list-of-d3-symbols-available-to-us
+
+//https://www.d3-graph-gallery.com/graph/line_smallmultiple.html
+// Define axes
+var xAxis = d3.axisBottom().scale(xScale);
+var yAxis = d3.axisLeft().scale(yScale);
+// Define lines
+var line = d3
+  .line()
+  .curve(d3.curveMonotoneX)
+  .x(function(d) {
+    return xScale(d["date"]);
+  })
+  .y(function(d) {
+    return yScale(d["times"]);
+  });
+// Define svg canvas
+var svg = d3
+  .select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  //.attr("width", width )
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  xScale.domain(
+    //d3.extent(data, function(d) {
+    d3.extent(data, function(d) {
+      return d["year"];})
+  );
+  yScale.domain([0, 2400]);
+  // Place the axes on the chart
+  svg
+    .append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .attr("font-size", "15px");
+  svg
+    .append("text")
+    .attr("transform",
+            "translate(" + (width/2) + " ," +
+                           (height + margin.top -10) + ")")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Year");
+
+  svg
+    .append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+    .attr("font-size", "15px");
+
+    svg
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x",0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Num of Earthquakes");
+
+  var products = svg
+    .selectAll(".category")
+    .data(concentrations)
+    .enter()
+    .append("g")
+    .attr("class", "category");
+  products
+    .append("path")
+    .attr("class", "line")
+    .attr("d", function(d) {
+      return line(d.datapoints);
+    })
+    .style("stroke", function(d) {
+      return color(d.category);
+    });
+//http://bl.ocks.org/mgold/6a32cec6380b6ce75c1e
+// https://www.d3-graph-gallery.com/graph/scatter_grouped.html
+
+
+        //https://www.d3-graph-gallery.com/graph/bubble_color.html
+
+    svg
+    .append("text")
+       .text("Worldwide Earthquake stats 2000-2015")
+       .attr("x", (width/2))
+       .style("text-anchor", "middle")
+       .attr("y", 20-(margin.top/2))
+       .attr("font-family", "sans-serif")
+       .attr("font-size", "20px")
+       .attr("fill", "black");
+       //draw legend
+
+
+       // Handmade legend
+
+    svg.append("rect").attr("x",width-60).attr("y", 5).attr("width", 20).attr("height", 10).style("fill", "#FFC300");
+    svg.append("rect").attr("x",width-60).attr("y",25).attr("width", 20).attr("height", 10).style("fill", "#FF5733");
+    svg.append("rect").attr("x",width-60).attr("y",45).attr("width", 20).attr("height", 10).style("fill", "#C70039");
+    svg.append("rect").attr("x",width-60).attr("y",65).attr("width", 20).attr("height", 10).style("fill", "#900C3F");
+    svg.append("text").attr("x",width-30).attr("y", 12).text("5_5.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 32).text("6_6.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 52).text("7_7.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 72).text("8.0+").style("font-size", "15px").attr("alignment-baseline","middle");
+
+
+  // console.log(JSON.stringify(d3.values(concentrations), null, 2)) // to view the structure
+  console.log(d3.values(concentrations)); // to view the structure
+  console.log(concentrations);
+  // console.log(concentrations.map(function()))
+});
+
+d3.csv("earthquakes.csv").then(function(data) {
+  // Set the color domain equal to the three product categories
+  var productCategories = d3.keys(data[0]).filter(function(key) {
+    //return key !== "Order Month" && key !== "metric";
+    return key !== "year" && key !== "Estimated Deaths";
+  });
+  //color.domain(productCategories);
+  // console.log(JSON.stringify(data, null, 2)) // to view the structure
+  // Format the data field
+  //data.forEach(function(d) {
+    //d["year"] = +d["year"];
+//});
+data.forEach(function(d) {
+  var parseDate = d3.timeParse("%Y");
+  d["year"] = parseDate(d["year"]);
+});
+var concentrations = productCategories.map(function(category) {
+  return {
+    category: category,
+    datapoints: data.map(function(d) {
+      return { date: d["year"], times: +d[category], death: +d["Estimated Deaths"] };
+    })
+  };
+});
+
+var margin = { top: 60, right: 30, bottom: 60, left: 80 },
+  width =
+    800 - margin.left - margin.right,
+  height =
+    400 - margin.top - margin.bottom;
+// Define date parser
+//var parseDate = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+// Define scales
+var xScale = d3.scaleTime().range([0, width-100]); // chart width
+var yScale = d3.scaleLinear().range([height, 0]);
+var zScale =  d3.scaleLinear().domain([200, 300000]).range([ 5, 12]);
+//var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+//var legend_name = ["5_5.9", "6_6.9", "7_7.9", "8.0+"]
+
+// Option 1: provide color names:
+//var myColor = d3.scaleOrdinal().domain(legend_name)
+  //.range(["#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+var color = d3.scaleOrdinal()
+    .domain(["5_5.9", "6_6.9", "7_7.9", "8.0+" ])
+    .range([ "#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+// source https://stackoverflow.com/questions/24539234/list-of-d3-symbols-available-to-us
+
+//https://www.d3-graph-gallery.com/graph/line_smallmultiple.html
+// Define axes
+var xAxis = d3.axisBottom().scale(xScale);
+var yAxis = d3.axisLeft().scale(yScale);
+// Define lines
+var line = d3
+  .line()
+  .curve(d3.curveMonotoneX)
+  .x(function(d) {
+    return xScale(d["date"]);
+  })
+  .y(function(d) {
+    return yScale(d["times"]);
+  });
+// Define svg canvas
+var svg = d3
+  .select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  //.attr("width", width )
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  xScale.domain(
+    //d3.extent(data, function(d) {
+    d3.extent(data, function(d) {
+      return d["year"];})
+  );
+  yScale.domain([0, 2400]);
+  // Place the axes on the chart
+  svg
+    .append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .attr("font-size", "15px");
+  svg
+    .append("text")
+    .attr("transform",
+            "translate(" + (width/2) + " ," +
+                           (height + margin.top -10) + ")")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Year");
+
+  svg
+    .append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+    .attr("font-size", "15px");
+
+    svg
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x",0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Num of Earthquakes");
+
+  var products = svg
+    .selectAll(".category")
+    .data(concentrations)
+    .enter()
+    .append("g")
+    .attr("class", "category");
+  products
+    .append("path")
+    .attr("class", "line")
+    .attr("d", function(d) {
+      return line(d.datapoints);
+    })
+    .style("stroke", function(d) {
+      return color(d.category);
+    });
+//http://bl.ocks.org/mgold/6a32cec6380b6ce75c1e
+// https://www.d3-graph-gallery.com/graph/scatter_grouped.html
+  svg
+      // First we need to enter in a group
+      .selectAll("dots")
+      .data(concentrations)
+      .enter()
+        .append('g')
+        .style("fill", function(d){ return color(d.category) })
+      // Second we need to enter in the 'values' part of this group
+      .selectAll("points")
+      .data(function(d){ return d.datapoints })
+      .enter()
+      .append("circle")
+        .attr("cx", function(d) { return xScale(d.date); } )
+        .attr("cy", function(d) { return yScale(d.times); } )
+        //.attr("r", 5)
+        .attr("r", function (d) { return zScale(d.death);} )
+
+        //https://www.d3-graph-gallery.com/graph/bubble_color.html
+
+        svg
+        .append("text")
+           .text("Worldwide Earthquake stats 2000-2015 with symbols")
+           .attr("x", (width/2-10))
+           .style("text-anchor", "middle")
+           .attr("y", 20-(margin.top/2))
+           .attr("font-family", "sans-serif")
+           .attr("font-size", "20px")
+           .attr("fill", "black");
+
+
+       // Handmade legend
+
+    svg.append("rect").attr("x",width-60).attr("y", 5).attr("width", 20).attr("height", 10).style("fill", "#FFC300");
+    svg.append("rect").attr("x",width-60).attr("y",25).attr("width", 20).attr("height", 10).style("fill", "#FF5733");
+    svg.append("rect").attr("x",width-60).attr("y",45).attr("width", 20).attr("height", 10).style("fill", "#C70039");
+    svg.append("rect").attr("x",width-60).attr("y",65).attr("width", 20).attr("height", 10).style("fill", "#900C3F");
+    svg.append("text").attr("x",width-30).attr("y", 12).text("5_5.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 32).text("6_6.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 52).text("7_7.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 72).text("8.0+").style("font-size", "15px").attr("alignment-baseline","middle");
+
+
+  // console.log(JSON.stringify(d3.values(concentrations), null, 2)) // to view the structure
+  console.log(d3.values(concentrations)); // to view the structure
+  console.log(concentrations);
+  // console.log(concentrations.map(function()))
+});
+
+// square root scale
+
+
+d3.csv("earthquakes.csv").then(function(data) {
+  // Set the color domain equal to the three product categories
+  var productCategories = d3.keys(data[0]).filter(function(key) {
+    //return key !== "Order Month" && key !== "metric";
+    return key !== "year" && key !== "Estimated Deaths";
+  });
+  //color.domain(productCategories);
+  // console.log(JSON.stringify(data, null, 2)) // to view the structure
+  // Format the data field
+  //data.forEach(function(d) {
+    //d["year"] = +d["year"];
+//});
+data.forEach(function(d) {
+  var parseDate = d3.timeParse("%Y");
+  d["year"] = parseDate(d["year"]);
+});
+var concentrations = productCategories.map(function(category) {
+  return {
+    category: category,
+    datapoints: data.map(function(d) {
+      return { date: d["year"], times: +d[category], death: +d["Estimated Deaths"] };
+    })
+  };
+});
+
+var margin = { top: 60, right: 30, bottom: 60, left: 80 },
+  width =
+    800 - margin.left - margin.right,
+  height =
+    400 - margin.top - margin.bottom;
+// Define date parser
+//var parseDate = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+// Define scales
+var xScale = d3.scaleTime().range([0, width-100]); // chart width
+//var yScale = d3.scaleLinear().range([height, 0]);
+var yScale = d3.scaleSqrt().range([height,0]);
+var zScale =  d3.scaleLinear().domain([200, 300000]).range([ 5, 12]);
+console.log(zScale);
+//var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+//var legend_name = ["5_5.9", "6_6.9", "7_7.9", "8.0+"]
+
+// Option 1: provide color names:
+//var myColor = d3.scaleOrdinal().domain(legend_name)
+  //.range(["#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+var color = d3.scaleOrdinal()
+    .domain(["5_5.9", "6_6.9", "7_7.9", "8.0+" ])
+    .range([ "#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+// source https://stackoverflow.com/questions/24539234/list-of-d3-symbols-available-to-us
+
+//https://www.d3-graph-gallery.com/graph/line_smallmultiple.html
+// Define axes
+var xAxis = d3.axisBottom().scale(xScale);
+var yAxis = d3.axisLeft().scale(yScale);
+// Define lines
+var line = d3
+  .line()
+  .curve(d3.curveMonotoneX)
+  .x(function(d) {
+    return xScale(d["date"]);
+  })
+  .y(function(d) {
+    return yScale(d["times"]);
+  });
+// Define svg canvas
+var svg = d3
+  .select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  //.attr("width", width )
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  xScale.domain(
+    //d3.extent(data, function(d) {
+    d3.extent(data, function(d) {
+      return d["year"];})
+  );
+  yScale.domain([0, 2400]);
+  // Place the axes on the chart
+  svg
+    .append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .attr("font-size", "15px");
+  svg
+    .append("text")
+    .attr("transform",
+            "translate(" + (width/2) + " ," +
+                           (height + margin.top -10) + ")")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Year");
+
+  svg
+    .append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+    .attr("font-size", "15px");
+
+    svg
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x",0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Num of Earthquakes");
+
+  var products = svg
+    .selectAll(".category")
+    .data(concentrations)
+    .enter()
+    .append("g")
+    .attr("class", "category");
+  products
+    .append("path")
+    .attr("class", "line")
+    .attr("d", function(d) {
+      return line(d.datapoints);
+    })
+    .style("stroke", function(d) {
+      return color(d.category);
+    });
+//http://bl.ocks.org/mgold/6a32cec6380b6ce75c1e
+// https://www.d3-graph-gallery.com/graph/scatter_grouped.html
+  svg
+      // First we need to enter in a group
+      .selectAll("dots")
+      .data(concentrations)
+      .enter()
+        .append('g')
+        .style("fill", function(d){ return color(d.category) })
+      // Second we need to enter in the 'values' part of this group
+      .selectAll("points")
+      .data(function(d){ return d.datapoints })
+      .enter()
+      .append("circle")
+        .attr("cx", function(d) { return xScale(d.date); } )
+        .attr("cy", function(d) { return yScale(d.times); } )
+        //.attr("r", 5)
+        .attr("r", function (d) { return zScale(d.death);} )
+
+        //https://www.d3-graph-gallery.com/graph/bubble_color.html
+
+    svg
+    .append("text")
+       .text("Worldwide Earthquake stats 2000-2015 square root scale")
+       .attr("x", (width/2-20))
+       .style("text-anchor", "middle")
+       .attr("y", 20-(margin.top/2))
+       .attr("font-family", "sans-serif")
+       .attr("font-size", "20px")
+       .attr("fill", "black");
+       //draw legend
+
+
+       // Handmade legend
+
+    svg.append("rect").attr("x",width-60).attr("y", 5).attr("width", 20).attr("height", 10).style("fill", "#FFC300");
+    svg.append("rect").attr("x",width-60).attr("y",25).attr("width", 20).attr("height", 10).style("fill", "#FF5733");
+    svg.append("rect").attr("x",width-60).attr("y",45).attr("width", 20).attr("height", 10).style("fill", "#C70039");
+    svg.append("rect").attr("x",width-60).attr("y",65).attr("width", 20).attr("height", 10).style("fill", "#900C3F");
+    svg.append("text").attr("x",width-30).attr("y", 12).text("5_5.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 32).text("6_6.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 52).text("7_7.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 72).text("8.0+").style("font-size", "15px").attr("alignment-baseline","middle");
+
+
+  // console.log(JSON.stringify(d3.values(concentrations), null, 2)) // to view the structure
+  console.log(d3.values(concentrations)); // to view the structure
+  console.log(concentrations);
+  // console.log(concentrations.map(function()))
+});
+
+// log scales
+
+var margin = { top: 60, right: 30, bottom: 60, left: 80 },
+  width =
+    800 - margin.left - margin.right,
+  height =
+    400 - margin.top - margin.bottom;
+var xScale = d3.scaleTime().range([0, width-100]);
+//var yScale = d3.scaleLinear().range([height, 0]);
+var yScale = d3.scaleLog().clamp(true).range([height, 0]).base(10);
+var zScale =  d3.scaleLinear().domain([200, 300000]).range([ 5, 12]);
+
+d3.csv("earthquakes.csv").then(function(data) {
+  // Set the color domain equal to the three product categories
+  var productCategories = d3.keys(data[0]).filter(function(key) {
+    //return key !== "Order Month" && key !== "metric";
+    return key !== "year" && key !== "Estimated Deaths";
+  });
+  //color.domain(productCategories);
+  // console.log(JSON.stringify(data, null, 2)) // to view the structure
+  // Format the data field
+  //data.forEach(function(d) {
+    //d["year"] = +d["year"];
+//});
+data.forEach(function(d) {
+  var parseDate = d3.timeParse("%Y");
+  d["year"] = parseDate(d["year"]);
+});
+var concentrations = productCategories.map(function(category) {
+  return {
+    category: category,
+    datapoints: data.map(function(d) {
+      return { date: d["year"], times: +d[category], death: +d["Estimated Deaths"] };
+    })
+  };
+});
+
+
+// Define date parser
+//var parseDate = d3.timeParse("%Y-%m-%d %H:%M:%S");
+
+// Define scales
+//var xScale = d3.scaleTime().range([0, width-100]);
+
+//var yScale = d3.scaleLog().clamp(true).range([height, 0]).base(10);
+//var zScale =  d3.scaleLinear().domain([200, 300000]).range([ 5, 12]);
+//var color = d3.scaleOrdinal().range(d3.schemeCategory10);
+//var legend_name = ["5_5.9", "6_6.9", "7_7.9", "8.0+"]
+
+// Option 1: provide color names:
+//var myColor = d3.scaleOrdinal().domain(legend_name)
+  //.range(["#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+var color = d3.scaleOrdinal()
+    .domain(["5_5.9", "6_6.9", "7_7.9", "8.0+" ])
+    .range([ "#FFC300", "#FF5733", "#C70039", "#900C3F"])
+
+// source https://stackoverflow.com/questions/24539234/list-of-d3-symbols-available-to-us
+
+//https://www.d3-graph-gallery.com/graph/line_smallmultiple.html
+// Define axes
+var xAxis = d3.axisBottom().scale(xScale);
+var yAxis = d3.axisLeft().scale(yScale);
+// Define lines
+var line = d3
+  .line()
+  .curve(d3.curveMonotoneX)
+  .x(function(d) {
+    return xScale(d["date"]);
+  })
+  .y(function(d) {
+    return yScale(d["times"]);
+  });
+// Define svg canvas
+var svg = d3
+  .select("body")
+  .append("svg")
+  .attr("width", width + margin.left + margin.right)
+  //.attr("width", width )
+  .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+  .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+  xScale.domain(
+    //d3.extent(data, function(d) {
+    d3.extent(data, function(d) {
+      return d["year"];})
+  );
+  yScale.domain([1, 2400]);
+  // Place the axes on the chart
+  svg
+    .append("g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + height + ")")
+    .call(xAxis)
+    .attr("font-size", "15px");
+  svg
+    .append("text")
+    .attr("transform",
+            "translate(" + (width/2) + " ," +
+                           (height + margin.top -10) + ")")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Year");
+
+  svg
+    .append("g")
+    .attr("class", "y axis")
+    .call(yAxis)
+    .attr("font-size", "15px");
+
+    svg
+    .append("text")
+    .attr("transform", "rotate(-90)")
+    .attr("y", 0 - margin.left)
+    .attr("x",0 - (height / 2))
+    .attr("dy", "1em")
+    .attr("font-size", "20px")
+    .style("text-anchor", "middle")
+    .text("Num of Earthquakes");
+
+  var products = svg
+    .selectAll(".category")
+    .data(concentrations)
+    .enter()
+    .append("g")
+    .attr("class", "category");
+  products
+    .append("path")
+    .attr("class", "line")
+    .attr("d", function(d) {
+      return line(d.datapoints);
+    })
+    .style("stroke", function(d) {
+      return color(d.category);
+    });
+//http://bl.ocks.org/mgold/6a32cec6380b6ce75c1e
+// https://www.d3-graph-gallery.com/graph/scatter_grouped.html
+  svg
+      // First we need to enter in a group
+      .selectAll("dots")
+      .data(concentrations)
+      .enter()
+        .append('g')
+        .style("fill", function(d){ return color(d.category) })
+      // Second we need to enter in the 'values' part of this group
+      .selectAll("points")
+      .data(function(d){ return d.datapoints })
+      .enter()
+      .append("circle")
+        .attr("cx", function(d) { return xScale(d.date); } )
+        .attr("cy", function(d) { return yScale(d.times); } )
+        //.attr("r", 5)
+        .attr("r", function (d) { return zScale(d.death);} )
+
+        //https://www.d3-graph-gallery.com/graph/bubble_color.html
+
+    svg
+    .append("text")
+       .text("Worldwide Earthquake stats 2000-2015 log scale")
+       .attr("x", (width/2-15))
+       .style("text-anchor", "middle")
+       .attr("y", 20-(margin.top/2))
+       .attr("font-family", "sans-serif")
+       .attr("font-size", "20px")
+       .attr("fill", "black");
+       //draw legend
+
+
+       // Handmade legend
+
+    svg.append("rect").attr("x",width-60).attr("y", 5).attr("width", 20).attr("height", 10).style("fill", "#FFC300");
+    svg.append("rect").attr("x",width-60).attr("y",25).attr("width", 20).attr("height", 10).style("fill", "#FF5733");
+    svg.append("rect").attr("x",width-60).attr("y",45).attr("width", 20).attr("height", 10).style("fill", "#C70039");
+    svg.append("rect").attr("x",width-60).attr("y",65).attr("width", 20).attr("height", 10).style("fill", "#900C3F");
+    svg.append("text").attr("x",width-30).attr("y", 12).text("5_5.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 32).text("6_6.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 52).text("7_7.9").style("font-size", "15px").attr("alignment-baseline","middle");
+    svg.append("text").attr("x",width-30).attr("y", 72).text("8.0+").style("font-size", "15px").attr("alignment-baseline","middle");
+
+
+  // console.log(JSON.stringify(d3.values(concentrations), null, 2)) // to view the structure
+  console.log(d3.values(concentrations)); // to view the structure
+  console.log(concentrations);
+  // console.log(concentrations.map(function()))
+});
+
+// Define responsive behavior
+
+  </script>
+</body>

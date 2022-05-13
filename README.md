@@ -1,5 +1,5 @@
 # lyft_Apprenticeship_application
-Folder CSE6242_HW2 includes 4 web applications for data visualization using D3, version 5. These codes are part of my homework assignment for CSE6242 at Georgia Tech.
+Folder CSE6242_HW2 includes 4 web applications for data visualization using D3, version 5. These codes are part of my homework assignments for CSE6242 at Georgia Tech.
 
 To view any of the html files:
 
